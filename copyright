@@ -1,0 +1,56 @@
+add_filter( 'the_content', 'mmx_maybe_add_copyright_to_content', 500);
+function mmx_maybe_add_copyright_to_content( $content ) {
+	
+		$copyright = array();
+
+		/* thumbnail copyright */
+		$thumbnail_id = get_post_thumbnail_id();
+		$thumbnail_meta = array();
+		$thumbnail_meta[] = get_post_meta( $thumbnail_id, 'name', true ) ?? NULL;
+		$thumbnail_meta[] = get_post_meta( $thumbnail_id, 'organisation', true ) ?? NULL;
+				
+		if( count( array_filter ( $thumbnail_meta ) ) >= 1 ){
+			$thumbnail_copyright = implode( ', ', $thumbnail_meta );
+			$copyright[] = '<div>&copy; ' . $thumbnail_copyright . '</div>';			
+		} 
+		
+		$copyright_obs = array();
+	
+		/* thumbnail copyright obs */	
+		$thumbnail_id_obs = get_post_thumbnail_id();
+		$thumbnail_meta_obs = array();
+		$thumbnail_meta_obs[] = get_post_meta( $thumbnail_id_obs, 'artikelfoto', true ) ?? NULL;
+			
+		if( count( array_filter ( $thumbnail_meta_obs ) ) >= 1 ){
+			$thumbnail_copyright_obs = implode( ' ', $thumbnail_meta_obs );
+			$copyright_obs[] = '<div>&copy; ' . $thumbnail_copyright_obs . '</div>';	
+		}
+	
+		/* in content images copyright */
+		preg_match( '|<img.*?src=".*?/?>|', $content, $matches );
+		foreach( $matches as $img ){
+			preg_match( '|(src=")(.*?)"|', $img, $url);
+			$attachment_id = attachment_url_to_postid( $url[2] );
+			$attachment_meta = array();
+			$attachment_meta[] = get_post_meta( $attachment_id, 'name', true ) ?? NULL;
+			$attachment_meta[] = get_post_meta( $attachment_id, 'organisation', true ) ?? NULL;
+			$attachment_meta[] = get_post_meta( $attachment_id, 'artikelfoto', true ) ?? NULL;
+			
+			if( count( array_filter ($attachment_meta) ) >= 1 ){
+				$attachment_copyright = implode( ', ', $attachment_meta );
+				$copyright[] = '<div>&copy; ' . $attachment_copyright . '</div>';				
+			}
+		}
+	
+		$images_found = count( $copyright );
+		if( $images_found >= 1 ){
+			$copyright_list = '<div class="copyright">';
+			$copyright_list .= $images_found === 1 ? 'Artikelbild' : 'Artikelbilder'; # @todo i18n gettext
+			$copyright_list .= implode( '', $copyright );
+			$copyright_list .= implode( '', $copyright_obs );
+			$copyright_list .= '</div><br />';
+			$content .= $copyright_list;
+		}
+	
+	return $content;
+}
